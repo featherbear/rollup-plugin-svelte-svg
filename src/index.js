@@ -27,7 +27,7 @@ const toSvelte = content => `
 	{stroke}
 	{strokeWidth}
 >
-	{@html ${content}}
+	${content}
 </svg>
 `;
 
