@@ -38,17 +38,9 @@ export default function svg(options = {}) {
 				return null;
 			}
 
-			// transform the source with SVGO
-			const SVGO = new svgo(options.svgo || {
-				plugins: [{
-				  removeViewBox: false
-				}, {
-				  removeDimensions: true
-				}]
-			});
-			return SVGO.optimize(source).then(({data}) => {
+			function process(source) {
 				const svgRegex = new RegExp("(<svg.*?)(/?>.*)", "gs");
-				const parts = svgRegex.exec(data);
+				const parts = svgRegex.exec(source);
 				if (!parts) {
 					throw new Error(
 						"svg file did not start with <svg> tag. Unable to convert to Svelte component"
@@ -68,7 +60,15 @@ export default function svg(options = {}) {
 				});
 
 				return { code, map };
-			})
+			}			
+
+			if (options.svgo) {
+				// transform the source with SVGO
+				const SVGO = new svgo(options.svgo);
+				return SVGO.optimize(source).then(({ data }) => process(data))
+			} else {
+				return process(source)
+			}
 		},
 	};
 }
