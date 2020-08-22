@@ -1,0 +1,37 @@
+name: build npm package
+
+on:
+  push:
+    branches:
+    - master
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@master
+
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+
+    - name: Install packages
+      run: |
+        npm install
+        npm install pnpm --no-save
+
+    - name: Build
+      run: npm run build
+    
+    - name: Setup publish
+      run: git add dist/ -f
+
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v2.3.1
+      env:
+        PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PUBLISH_BRANCH: build
+        PUBLISH_DIR: .
+
+
+
