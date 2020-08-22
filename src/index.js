@@ -1,5 +1,6 @@
 import { extname } from "path";
 import { platform } from "os";
+import svgo from "svgo";
 
 import { createFilter } from "rollup-pluginutils";
 import Svelte from "svelte/compiler";
@@ -32,32 +33,42 @@ export default function svg(options = {}) {
 
 	return {
 		name: "svg",
-
 		transform(source, id) {
 			if (!filter(id) || extname(id) !== ".svg") {
 				return null;
 			}
-			const svgRegex = new RegExp("(<svg.*?)(/?>.*)", "gs");
-			const parts = svgRegex.exec(source);
-			if (!parts) {
-				throw new Error(
-					"svg file did not start with <svg> tag. Unable to convert to Svelte component"
-				);
-			}
-			const [, svgStart, svgBody] = parts;
-			const content = toSvelte(svgStart, svgBody);
-			const {
-				js: { code, map },
-			} = Svelte.compile(content, {
-				filename: id,
-				name: toJSClass(head(tail(id.split(isWindows ? "\\" : "/")).split("."))),
-				format: "esm",
-				generate: options.generate,
-				hydratable: true,
-				dev: options.dev,
-			});
 
-			return { code, map };
+			// transform the source with SVGO
+			const SVGO = new svgo(options.svgo || {
+				plugins: [{
+				  removeViewBox: false
+				}, {
+				  removeDimensions: true
+				}]
+			});
+			return SVGO.optimize(source).then(({data}) => {
+				const svgRegex = new RegExp("(<svg.*?)(/?>.*)", "gs");
+				const parts = svgRegex.exec(data);
+				if (!parts) {
+					throw new Error(
+						"svg file did not start with <svg> tag. Unable to convert to Svelte component"
+					);
+				}
+				const [, svgStart, svgBody] = parts;
+				const content = toSvelte(svgStart, svgBody);
+				const {
+					js: { code, map },
+				} = Svelte.compile(content, {
+					filename: id,
+					name: toJSClass(head(tail(id.split(isWindows ? "\\" : "/")).split("."))),
+					format: "esm",
+					generate: options.generate,
+					hydratable: true,
+					dev: options.dev,
+				});
+
+				return { code, map };
+			})
 		},
 	};
 }
