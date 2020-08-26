@@ -9,7 +9,7 @@ import Svelte from "svelte/compiler";
 // https://nodejs.org/api/os.html#os_os_platform
 const isWindows = platform() === "win32";
 
-const toSvelte = (svgStart, svgBody) => `${svgStart} {...$$props}${svgBody}`;
+const toSvelte = (svgStart, svgBody) => `<script>export let elemRef = undefined</script>${svgStart} bind:this={elemRef} {...$$props} ${svgBody}`;
 
 const head = xs => xs[0];
 const tail = xs => xs[xs.length - 1];
